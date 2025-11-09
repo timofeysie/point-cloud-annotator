@@ -1,0 +1,11 @@
+project_name = "point-cloud-annotator"
+aws_region   = "us-east-1"
+environment  = "prod"
+
+# S3 bucket name must be globally unique
+# Change this to your own unique bucket name
+s3_bucket_name = "your-unique-bucket-name-here"
+
+# Set to true to enable CloudFront distribution
+enable_cloudfront = false
+
