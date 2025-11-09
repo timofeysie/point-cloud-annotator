@@ -6,8 +6,8 @@ This guide provides step-by-step instructions for deploying the Point Cloud Anno
 
 Before deploying, ensure you have the following installed and configured:
 
-1. **AWS Account**: An active AWS account with appropriate permissions
-2. **AWS CLI**: Installed and configured with credentials
+1. **AWS Account**: An active AWS account with appropriate permissionsw
+2. **AWS CLI**: Installed and configured ith credentials
    ```bash
    aws --version
    aws configure

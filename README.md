@@ -287,6 +287,7 @@ Requires WebGL 2.0 support.
 - Point cloud displayed is the Lion Takanawa sample
 - Annotations are global (not user-specific in this version)
 - No authentication required (as per PRD)
+- **⚠️ CRITICAL: Point cloud loading**: `potree-loader@1.10.4` does not work in any local development environment (neither dev server nor production preview). This is a critical blocker. The point cloud may work in production deployment (S3), but cannot be tested locally. **Recommendation:** Consider switching to an alternative point cloud loader or using a development mock. See `docs/point-cloud-loading-issue.md` for details.
 
 ## Cost Estimation
 

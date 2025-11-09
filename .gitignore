@@ -21,3 +21,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Point cloud data (may be large binary files)
+public/pointclouds/lion_takanawa/data/

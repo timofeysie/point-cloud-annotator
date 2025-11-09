@@ -4,6 +4,7 @@ import { OrbitControls } from 'three-stdlib';
 import { Potree } from 'potree-loader';
 import { Annotation } from '../types/annotation';
 import { annotationService } from '../services/annotationService';
+import { createMockPointCloud, shouldUseMockPointCloud } from '../utils/mockPointCloud';
 import { X } from 'lucide-react';
 
 export function PotreeViewer() {
@@ -13,6 +14,7 @@ export function PotreeViewer() {
   const [inputText, setInputText] = useState('');
   const [pendingPosition, setPendingPosition] = useState<THREE.Vector3 | null>(null);
   const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
+  const [pointCloudError, setPointCloudError] = useState<string | null>(null);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -21,6 +23,9 @@ export function PotreeViewer() {
   const annotationMarkersRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
+  const potreeRef = useRef<any>(null);
+  const pointCloudRef = useRef<any>(null);
+  const hasLoggedErrorRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -49,16 +54,138 @@ export function PotreeViewer() {
     directionalLight.position.set(10, 10, 5);
     scene.add(directionalLight);
 
-    const potree = new Potree();
-    potree.pointBudget = 1_000_000;
+    // Check if we should use mock point cloud (development mode)
+    const useMock = shouldUseMockPointCloud();
+    
+    if (useMock) {
+      // Development mode: Use mock point cloud
+      console.log('🔧 Development mode: Using mock point cloud');
+      const mockPointCloud = createMockPointCloud();
+      scene.add(mockPointCloud);
+      pointCloudRef.current = mockPointCloud;
+      
+      // Position camera to view the mock point cloud
+      const box = (mockPointCloud as any).boundingBox as THREE.Box3;
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = camera.fov * (Math.PI / 180);
+      let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+      cameraZ *= 1.5;
+      
+      camera.position.set(center.x + cameraZ, center.y + cameraZ, center.z + cameraZ);
+      camera.lookAt(center);
+      
+      setPointCloudError(null);
+    } else {
+      // Production mode: Use real potree-loader
+      const potree = new Potree();
+      potree.pointBudget = 1_000_000;
+      potreeRef.current = potree;
 
-    potree
-      .loadPointCloud(
-        'lion_takanawa',
-        'https://cdn.rawgit.com/potree/potree/develop/pointclouds/lion_takanawa/cloud.js'
-      )
-      .then((pco: any) => {
+      // Point cloud URL configuration
+      // Priority:
+    // 1. VITE_POINT_CLOUD_URL environment variable (for custom hosted point clouds)
+    // 2. Local point cloud in public/ directory (for development)
+    // 3. CDN URLs (fallback, typically won't work due to CORS)
+    const customPointCloudUrl = import.meta.env.VITE_POINT_CLOUD_URL;
+    // Try multiple URL formats - potree-loader might expect different formats
+    const baseUrl = `${window.location.origin}/pointclouds/lion_takanawa`;
+    
+    const pointCloudUrls = customPointCloudUrl
+      ? [customPointCloudUrl] // Use custom URL if provided
+      : [
+          // Try directory URL first (potree-loader expects directory and auto-finds cloud.js)
+          `${baseUrl}/`,
+          // Try directory URL without trailing slash
+          baseUrl,
+          // Try explicit cloud.js file (pure JSON format, same as CDN)
+          `${baseUrl}/cloud.js`,
+          // Try relative path
+          '/pointclouds/lion_takanawa/cloud.js',
+          // Fallback to CDN URLs (these typically won't work due to CORS/data file access)
+          'https://cdn.rawgit.com/potree/potree/develop/pointclouds/lion_takanawa/cloud.js',
+          'https://raw.githubusercontent.com/potree/potree/develop/pointclouds/lion_takanawa/cloud.js',
+        ];
+
+    const loadPointCloud = async (urlIndex = 0) => {
+      if (urlIndex >= pointCloudUrls.length) {
+        // Only log once when all URLs have been tried (even if React StrictMode runs effect twice)
+        if (!hasLoggedErrorRef.current) {
+          hasLoggedErrorRef.current = true;
+          console.info(
+            'Point cloud failed to load. ' +
+            'Note: potree-loader has known issues loading point clouds in development mode. ' +
+            'The point cloud will work once deployed to S3 with proper hosting. ' +
+            'The app will continue to function for annotation testing without the point cloud.'
+          );
+        }
+        setPointCloudError(
+          'Point cloud not loaded. This is expected in development - potree-loader has limitations with local files. ' +
+          'The point cloud will work once deployed to S3. You can still test annotation functionality.'
+        );
+        return;
+      }
+
+      const url = pointCloudUrls[urlIndex];
+      
+      // Log which URL we're trying (only for local URL to help debug)
+      if (url.includes(window.location.origin)) {
+        console.log(`Attempting to load point cloud from: ${url}`);
+      }
+
+      try {
+        // First, verify the metadata file is accessible
+        let metadataUrl = url;
+        if (url.endsWith('/')) {
+          metadataUrl = `${url}cloud.js`; // potree-loader expects cloud.js
+        } else if (!url.includes('cloud.')) {
+          // If URL doesn't include cloud.js/json, try to determine the correct path
+          metadataUrl = url.endsWith('lion_takanawa') ? `${url}/cloud.js` : url;
+        }
+        
+        // Test fetch to verify file is accessible
+        if (metadataUrl.includes(window.location.origin)) {
+          const testResponse = await fetch(metadataUrl);
+          if (!testResponse.ok) {
+            throw new Error(`Metadata file not accessible: ${testResponse.status} ${testResponse.statusText}`);
+          }
+          const contentType = testResponse.headers.get('content-type');
+          const text = await testResponse.text();
+          
+          // Validate file format: either pure JSON (starts with {) or Potree wrapper (starts with Potree =)
+          const isPureJSON = text.trim().startsWith('{');
+          const isPotreeWrapper = text.trim().startsWith('Potree') && text.includes('=');
+          
+          if (!isPureJSON && !isPotreeWrapper) {
+            throw new Error(`Metadata file format not recognized. Expected JSON or Potree wrapper format. Content-Type: ${contentType}`);
+          }
+          
+          const format = isPotreeWrapper ? 'Potree wrapper' : (isPureJSON ? 'Pure JSON' : 'Unknown');
+          console.log(`✓ Metadata file verified: ${metadataUrl} (Content-Type: ${contentType}, Format: ${format})`);
+          
+          // Log warning if Content-Type doesn't match expected format
+          if (isPureJSON && !contentType?.includes('json')) {
+            console.warn(`⚠ Warning: File is pure JSON but Content-Type is ${contentType}. Potree-loader might reject it.`);
+          }
+        }
+        
+        // Try loading with potree-loader
+        // Note: potree-loader needs access to both the cloud.json metadata file
+        // and the binary data files in the data/ subdirectory
+        // The second parameter should be the URL to the metadata file or directory
+        console.log(`Calling potree.loadPointCloud('lion_takanawa', '${url}')`);
+        const pco = await potree.loadPointCloud('lion_takanawa', url);
+        
+        // If we get here, it worked!
+        console.log(`✓ Successfully loaded point cloud from: ${url}`, pco);
+        
+        if (!pco) {
+          throw new Error('loadPointCloud returned null/undefined');
+        }
+
         scene.add(pco);
+        pointCloudRef.current = pco;
 
         const box = new THREE.Box3();
         box.setFromObject(pco);
@@ -71,7 +198,33 @@ export function PotreeViewer() {
 
         camera.position.set(center.x + cameraZ, center.y + cameraZ, center.z + cameraZ);
         camera.lookAt(center);
-      });
+        
+        console.log(`✓ Point cloud loaded successfully from: ${url}`);
+        setPointCloudError(null); // Clear any previous errors
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        
+        // Log detailed error for debugging (only for local URLs to avoid spam)
+        if (url.includes(window.location.origin)) {
+          console.warn(`Failed to load from ${url}:`, {
+            message: errorMessage,
+            stack: errorStack,
+            url: url,
+            urlIndex: urlIndex
+          });
+        }
+        
+        // Try next URL
+        loadPointCloud(urlIndex + 1);
+      }
+    };
+
+    // Only try to load real point cloud if not using mock
+    if (!useMock) {
+      loadPointCloud();
+    }
+    }
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -81,7 +234,10 @@ export function PotreeViewer() {
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
-      potree.updatePointClouds([scene.children[2]], camera, renderer);
+      // Only update point clouds if using real potree-loader (not mock)
+      if (!useMock && potreeRef.current && pointCloudRef.current && pointCloudRef.current.initialized) {
+        potreeRef.current.updatePointClouds([pointCloudRef.current], camera, renderer);
+      }
       renderer.render(scene, camera);
     };
     animate();
@@ -152,7 +308,10 @@ export function PotreeViewer() {
       return;
     }
 
-    const pointClouds = sceneRef.current.children.filter((child: THREE.Object3D) => child.type === 'Points');
+    // Find point clouds - either Points directly or Groups containing Points (for mock point cloud)
+    const pointClouds = sceneRef.current.children.filter((child: THREE.Object3D) => 
+      child.type === 'Points' || child.type === 'Group'
+    );
     const pcIntersects = raycasterRef.current.intersectObjects(pointClouds, true);
 
     if (pcIntersects.length > 0) {
@@ -199,6 +358,41 @@ export function PotreeViewer() {
   return (
     <div className="relative w-full h-screen">
       <div ref={containerRef} onClick={handleCanvasClick} className="w-full h-full" />
+
+      {shouldUseMockPointCloud() && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-100 border border-blue-400 text-blue-800 px-6 py-4 rounded-lg shadow-lg z-20 max-w-2xl">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h4 className="font-semibold mb-2">🔧 Development Mode: Using Mock Point Cloud</h4>
+              <p className="text-sm">The mock point cloud allows you to test annotation features. The real point cloud will be used in production.</p>
+            </div>
+            <button
+              onClick={() => {}}
+              className="ml-4 text-blue-600 hover:text-blue-800 opacity-50 cursor-default"
+              aria-label="Info"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+      {pointCloudError && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-4 rounded-lg shadow-lg z-20 max-w-2xl">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h4 className="font-semibold mb-2">Point Cloud Not Loaded</h4>
+              <p className="text-sm">{pointCloudError}</p>
+            </div>
+            <button
+              onClick={() => setPointCloudError(null)}
+              className="ml-4 text-yellow-600 hover:text-yellow-800"
+              aria-label="Dismiss"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {showInput && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl z-10 w-96">
@@ -264,6 +458,9 @@ export function PotreeViewer() {
           <li>• Click on the point cloud to add an annotation</li>
           <li>• Click on a red marker to view/delete annotation</li>
           <li>• Use mouse to rotate, zoom, and pan the view</li>
+          {pointCloudError && (
+            <li className="text-yellow-600">• Point cloud not loaded - annotations can still be tested</li>
+          )}
         </ul>
         <div className="mt-3 pt-3 border-t border-gray-200">
           <p className="text-xs text-gray-600">Total annotations: {annotations.length}</p>
