@@ -1,22 +1,13 @@
 # Mock Point Cloud Implementation
 
-## Overview
+When the `potree-loader` is used locally it throws an "Unsupported file type" error even when the files are valid and accessible.
 
-A development mock point cloud has been implemented to unblock local development when `potree-loader` doesn't work. This allows full testing of annotation features without needing the real point cloud.
+A development mock point cloud has been implemented to unblock local development in this case to allow full testing of annotation features without needing the real point cloud.
 
-## How It Works
+Either when running `npm run dev`
+OR explicitly enabled via VITE_USE_MOCK_POINT_CLOUD=true in the .env file.
 
-### Automatic Detection
-
-The mock is automatically used in development mode (`npm run dev`). The detection logic:
-
-```typescript
-// Uses mock if:
-// 1. In development mode (import.meta.env.DEV)
-// 2. OR explicitly enabled via VITE_USE_MOCK_POINT_CLOUD=true
-```
-
-### Mock Point Cloud Features
+## Mock Point Cloud Features
 
 - **5,000 random points** within the same bounding box as the real lion_takanawa point cloud
 - **Color variation** to simulate RGB point cloud data
@@ -28,16 +19,6 @@ The mock is automatically used in development mode (`npm run dev`). The detectio
 
 - `src/utils/mockPointCloud.ts` - Mock point cloud creation logic
 - `src/components/PotreeViewer.tsx` - Updated to use mock in dev mode
-
-## Usage
-
-### Development Mode (Automatic)
-
-```bash
-npm run dev
-```
-
-The mock point cloud will be used automatically. You'll see a blue notification banner indicating development mode.
 
 ### Force Mock in Production Build
 
@@ -79,4 +60,3 @@ The mock point cloud fully supports:
 ## Future: Option 1 (Alternative Library)
 
 When ready to implement Option 1 (alternative library), the mock can be easily removed or kept as a fallback. The code is structured to make this transition smooth.
-

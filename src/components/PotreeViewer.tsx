@@ -95,6 +95,11 @@ export function PotreeViewer() {
     const pointCloudUrls = customPointCloudUrl
       ? [customPointCloudUrl] // Use custom URL if provided
       : [
+          // Try Potree.org example first (official example from https://potree.org/potree/examples/lion_takanawa.html)
+          'https://potree.org/potree/examples/pointclouds/lion_takanawa/',
+          'https://potree.org/potree/examples/pointclouds/lion_takanawa/cloud.js',
+          'https://potree.org/potree/examples/lion_takanawa/',
+          'https://potree.org/potree/examples/lion_takanawa/cloud.js',
           // Try directory URL first (potree-loader expects directory and auto-finds cloud.js)
           `${baseUrl}/`,
           // Try directory URL without trailing slash
