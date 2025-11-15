@@ -92,6 +92,10 @@ export function createMockPointCloud(): THREE.Group {
  * Checks if we should use the mock point cloud (development mode)
  */
 export function shouldUseMockPointCloud(): boolean {
+  // Disable mock if explicitly disabled
+  if (import.meta.env.VITE_USE_MOCK_POINT_CLOUD === 'false') {
+    return false;
+  }
   // Use mock in development mode, or if explicitly enabled
   return import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_POINT_CLOUD === 'true';
 }

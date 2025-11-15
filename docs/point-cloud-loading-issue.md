@@ -35,6 +35,10 @@ This is a critical blocker for local development.
 
 See: docs/RECOMMENDATIONS.md
 
+For a short-term implementation, I used a development mock to unblock work.
+
+A long-term: switch to an alternative library would be another option. This would prefer @pnext/three-loader if the Three.js version can be resolved, or find another working alternative.
+
 ## Attempted Solutions
 
 We've tried the following approaches, all of which resulted in the same "Unsupported file type" error:
