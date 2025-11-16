@@ -95,22 +95,20 @@ export function PotreeViewer() {
     const pointCloudUrls = customPointCloudUrl
       ? [customPointCloudUrl] // Use custom URL if provided
       : [
-          // Try Potree.org example first (official example from https://potree.org/potree/examples/lion_takanawa.html)
-          'https://potree.org/potree/examples/pointclouds/lion_takanawa/',
-          'https://potree.org/potree/examples/pointclouds/lion_takanawa/cloud.js',
-          'https://potree.org/potree/examples/lion_takanawa/',
-          'https://potree.org/potree/examples/lion_takanawa/cloud.js',
-          // Try directory URL first (potree-loader expects directory and auto-finds cloud.js)
+          // Try directory URL first (potree-loader expects directory and auto-finds cloud.json)
           `${baseUrl}/`,
           // Try directory URL without trailing slash
           baseUrl,
-          // Try explicit cloud.js file (pure JSON format, same as CDN)
+          // Try explicit cloud.json file (pure JSON format - preferred)
+          `${baseUrl}/cloud.json`,
+          // Try relative path with cloud.json
+          '/pointclouds/lion_takanawa/cloud.json',
+          // Fallback: Try cloud.js (for compatibility, but cloud.json is preferred)
           `${baseUrl}/cloud.js`,
-          // Try relative path
           '/pointclouds/lion_takanawa/cloud.js',
-          // Fallback to CDN URLs (these typically won't work due to CORS/data file access)
-          'https://cdn.rawgit.com/potree/potree/develop/pointclouds/lion_takanawa/cloud.js',
-          'https://raw.githubusercontent.com/potree/potree/develop/pointclouds/lion_takanawa/cloud.js',
+          // Try Potree.org example (for reference, may not work due to CORS)
+          'https://potree.org/potree/examples/pointclouds/lion_takanawa/',
+          'https://potree.org/potree/examples/pointclouds/lion_takanawa/cloud.js',
         ];
 
     const loadPointCloud = async (urlIndex = 0) => {
@@ -143,10 +141,11 @@ export function PotreeViewer() {
         // First, verify the metadata file is accessible
         let metadataUrl = url;
         if (url.endsWith('/')) {
-          metadataUrl = `${url}cloud.js`; // potree-loader expects cloud.js
+          metadataUrl = `${url}cloud.json`; // potree-loader expects cloud.json for JSON content
         } else if (!url.includes('cloud.')) {
-          // If URL doesn't include cloud.js/json, try to determine the correct path
-          metadataUrl = url.endsWith('lion_takanawa') ? `${url}/cloud.js` : url;
+          // If URL doesn't include cloud.json/js, try to determine the correct path
+          // Prefer cloud.json over cloud.js
+          metadataUrl = url.endsWith('lion_takanawa') ? `${url}/cloud.json` : url;
         }
         
         // Test fetch to verify file is accessible

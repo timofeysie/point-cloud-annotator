@@ -24,3 +24,9 @@ dist-ssr
 
 # Point cloud data (may be large binary files)
 public/pointclouds/lion_takanawa/data/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+# Note: .terraform.lock.hcl should be committed (it locks provider versions)

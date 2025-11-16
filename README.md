@@ -2,6 +2,8 @@
 
 A web application for viewing and annotating LAZ point clouds using Three.js and Potree. Create, view, and manage 3D annotations on interactive point cloud data with persistent storage using AWS serverless architecture.
 
+The application is deployed [here](http://point-cloud-annotator-232723.s3-website-us-east-1.amazonaws.com/).
+
 ### Workflow
 
 ```bash
