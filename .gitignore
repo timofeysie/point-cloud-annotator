@@ -30,3 +30,6 @@ public/pointclouds/lion_takanawa/data/
 *.tfstate
 *.tfstate.*
 # Note: .terraform.lock.hcl should be committed (it locks provider versions)
+
+# Potree source directory (built files are in public/potree/)
+potree/
