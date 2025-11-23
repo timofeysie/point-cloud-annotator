@@ -1823,3 +1823,106 @@ Potree.Viewer is working
 Dependencies are in place
 After refreshing, the BinaryHeap and TWEEN errors should be resolved, and the point cloud should display with the camera automatically fitting to the scene.
 The component should now work as expected, matching the lion.html example.
+
+## Annotation work
+
+There are three options considered for working locally with the annotations.
+
+A. Express mock server
+B. Use the deployed Lambdas
+C. AWS SAM Local
+
+C and B seem the best approach which allows more hands on use of the actual code deployed.
+
+```
+Three.js not available for marker rendering Error Component Stack
+    at PotreeViewer (PotreeViewer.tsx:14:24)
+    at div (<anonymous>)
+    at App (<anonymous>)
+```
+
+Now I see this in the console when adding an annotation: 
+
+```
+[Annotation] Rendering markers: {count: 1}
+react-dom_client.js?v=5a2ca2d1:16670 Uncaught TypeError: viewerRef.current.scene.add is not a function
+    at PotreeViewer.tsx:198:31
+    at Array.forEach (<anonymous>)
+    at PotreeViewer.tsx:180:17
+    at commitHookEffectListMount (react-dom_client.js?v=5a2ca2d1:16915:34)
+    at commitPassiveMountOnFiber (react-dom_client.js?v=5a2ca2d1:18156:19)
+    at commitPassiveMountEffects_complete (react-dom_client.js?v=5a2ca2d1:18129:17)
+    at commitPassiveMountEffects_begin (react-dom_client.js?v=5a2ca2d1:18119:15)
+    at commitPassiveMountEffects (react-dom_client.js?v=5a2ca2d1:18109:11)
+    at flushPassiveEffectsImpl (react-dom_client.js?v=5a2ca2d1:19490:11)
+    at flushPassiveEffects (react-dom_client.js?v=5a2ca2d1:19447:22)
+(anonymous) @ PotreeViewer.tsx:198
+(anonymous) @ PotreeViewer.tsx:180
+commitHookEffectListMount @ react-dom_client.js?v=5a2ca2d1:16915
+commitPassiveMountOnFiber @ react-dom_client.js?v=5a2ca2d1:18156
+commitPassiveMountEffects_complete @ react-dom_client.js?v=5a2ca2d1:18129
+commitPassiveMountEffects_begin @ react-dom_client.js?v=5a2ca2d1:18119
+commitPassiveMountEffects @ react-dom_client.js?v=5a2ca2d1:18109
+flushPassiveEffectsImpl @ react-dom_client.js?v=5a2ca2d1:19490
+flushPassiveEffects @ react-dom_client.js?v=5a2ca2d1:19447
+(anonymous) @ react-dom_client.js?v=5a2ca2d1:19328
+workLoop @ react-dom_client.js?v=5a2ca2d1:197
+flushWork @ react-dom_client.js?v=5a2ca2d1:176
+performWorkUntilDeadline @ react-dom_client.js?v=5a2ca2d1:384Understand this error
+installHook.js:1 The above error occurred in the <PotreeViewer> component:
+
+    at PotreeViewer (http://localhost:5173/src/components/PotreeViewer.tsx?t=1763889985449:23:24)
+    at div
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+overrideMethod @ installHook.js:1
+logCapturedError @ react-dom_client.js?v=5a2ca2d1:14032
+update.callback @ react-dom_client.js?v=5a2ca2d1:14052
+callCallback @ react-dom_client.js?v=5a2ca2d1:11248
+commitUpdateQueue @ react-dom_client.js?v=5a2ca2d1:11265
+commitLayoutEffectOnFiber @ react-dom_client.js?v=5a2ca2d1:17093
+commitLayoutMountEffects_complete @ react-dom_client.js?v=5a2ca2d1:17980
+commitLayoutEffects_begin @ react-dom_client.js?v=5a2ca2d1:17969
+commitLayoutEffects @ react-dom_client.js?v=5a2ca2d1:17920
+commitRootImpl @ react-dom_client.js?v=5a2ca2d1:19353
+commitRoot @ react-dom_client.js?v=5a2ca2d1:19277
+performSyncWorkOnRoot @ react-dom_client.js?v=5a2ca2d1:18895
+flushSyncCallbacks @ react-dom_client.js?v=5a2ca2d1:9119
+flushPassiveEffectsImpl @ react-dom_client.js?v=5a2ca2d1:19506
+flushPassiveEffects @ react-dom_client.js?v=5a2ca2d1:19447
+(anonymous) @ react-dom_client.js?v=5a2ca2d1:19328
+workLoop @ react-dom_client.js?v=5a2ca2d1:197
+flushWork @ react-dom_client.js?v=5a2ca2d1:176
+performWorkUntilDeadline @ react-dom_client.js?v=5a2ca2d1:384Understand this error
+react-dom_client.js?v=5a2ca2d1:9129 Uncaught TypeError: viewerRef.current.scene.add is not a function
+    at PotreeViewer.tsx:198:31
+    at Array.forEach (<anonymous>)
+    at PotreeViewer.tsx:180:17
+    at commitHookEffectListMount (react-dom_client.js?v=5a2ca2d1:16915:34)
+    at commitPassiveMountOnFiber (react-dom_client.js?v=5a2ca2d1:18156:19)
+    at commitPassiveMountEffects_complete (react-dom_client.js?v=5a2ca2d1:18129:17)
+    at commitPassiveMountEffects_begin (react-dom_client.js?v=5a2ca2d1:18119:15)
+    at commitPassiveMountEffects (react-dom_client.js?v=5a2ca2d1:18109:11)
+    at flushPassiveEffectsImpl (react-dom_client.js?v=5a2ca2d1:19490:11)
+    at flushPassiveEffects (react-dom_client.js?v=5a2ca2d1:19447:22)
+(anonymous) @ PotreeViewer.tsx:198
+(anonymous) @ PotreeViewer.tsx:180
+commitHookEffectListMount @ react-dom_client.js?v=5a2ca2d1:16915
+commitPassiveMountOnFiber @ react-dom_client.js?v=5a2ca2d1:18156
+commitPassiveMountEffects_complete @ react-dom_client.js?v=5a2ca2d1:18129
+commitPassiveMountEffects_begin @ react-dom_client.js?v=5a2ca2d1:18119
+commitPassiveMountEffects @ react-dom_client.js?v=5a2ca2d1:18109
+flushPassiveEffectsImpl @ react-dom_client.js?v=5a2ca2d1:19490
+flushPassiveEffects @ react-dom_client.js?v=5a2ca2d1:19447
+(anonymous) @ react-dom_client.js?v=5a2ca2d1:19328
+workLoop @ react-dom_client.js?v=5a2ca2d1:197
+flushWork @ react-dom_client.js?v=5a2ca2d1:176
+performWorkUntilDeadline @ react-dom_client.js?v=5a2ca2d1:384Understand this error
+PotreeViewer.tsx:362 [Click Handler] Click listener removed
+86[.WebGL-0x124004b5000] GL_INVALID_FRAMEBUFFER_OPERATION: glDrawArrays: Framebuffer is incomplete: Attachment has zero size.Understand this warning
+170
+```
+
+The annotations are working now, but there are repeated sections of the point cloud after adding an annotation.  Also, there are large red circles in the background that do not appear to be associated with the annotated points.  I think we need to make sure the pint that is annotated has an appropriate style to show that it has an annotation.

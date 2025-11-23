@@ -148,10 +148,19 @@ npm run dev
 
 The application will be available at `http://localhost:5173`.
 
-**Note**: For local development, you'll need to either:
-- Deploy the AWS infrastructure first and use the API Gateway URL
-- Use a local mock API server
-- Use the deployed S3 website endpoint
+**Note**: For local development, you have two options:
+
+1. **Use SAM Local (Recommended for annotation development)**:
+   - Start DynamoDB Local: `docker-compose up -d dynamodb-local`
+   - Initialize table: `./scripts/init-dynamodb-local.sh`
+   - Start SAM Local API: `./scripts/start-local-api.sh`
+   - Set `.env`: `VITE_API_GATEWAY_URL=http://localhost:3000/local`
+   - Run dev server: `npm run dev`
+
+2. **Use deployed infrastructure**:
+   - Deploy the AWS infrastructure first and use the API Gateway URL
+   - Set `.env`: `VITE_API_GATEWAY_URL=<your-api-gateway-url>`
+   - Run dev server: `npm run dev`
 
 ### Building for Production
 
@@ -360,7 +369,6 @@ Requires WebGL 2.0 support.
 - Point cloud displayed is the Lion Takanawa sample
 - Annotations are global (not user-specific in this version)
 - No authentication required (as per PRD)
-- **⚠️ CRITICAL: Point cloud loading**: `potree-loader@1.10.4` does not work in any local development environment (neither dev server nor production preview). This is a critical blocker. The point cloud may work in production deployment (S3), but cannot be tested locally. **Recommendation:** Consider switching to an alternative point cloud loader or using a development mock. See `docs/point-cloud-loading-issue.md` for details.
 
 ## Cost Estimation
 
@@ -386,6 +394,64 @@ All AWS resources are managed using Terraform. Key resources include:
 - Optional CloudFront distribution
 
 See [docs/deployment.md](docs/deployment.md) for detailed infrastructure setup and management instructions.
+
+## Local Development with SAM Local
+
+For local development of annotation functionality, you can run Lambda functions locally using AWS SAM:
+
+### Prerequisites
+
+- Docker Desktop installed and running
+- AWS SAM CLI installed: `brew install aws-sam-cli`
+- AWS CLI installed (for DynamoDB Local setup)
+
+### Setup Steps
+
+1. **Start DynamoDB Local**:
+   ```bash
+   docker-compose up -d dynamodb-local
+   ```
+
+2. **Initialize DynamoDB Table**:
+   ```bash
+   ./scripts/init-dynamodb-local.sh
+   ```
+
+3. **Start SAM Local API**:
+   ```bash
+   ./scripts/start-local-api.sh
+   ```
+   This starts the API on `http://localhost:3000`
+
+4. **Configure Frontend**:
+   ```bash
+   echo "VITE_API_GATEWAY_URL=http://localhost:3000/local" > .env
+   ```
+
+5. **Start Frontend Dev Server**:
+   ```bash
+   npm run dev
+   ```
+
+### API Endpoints (Local)
+
+- `GET http://localhost:3000/local/annotations` - Get all annotations
+- `POST http://localhost:3000/local/annotations` - Create annotation
+- `DELETE http://localhost:3000/local/annotations/{id}` - Delete annotation
+
+### Switching Between Local and Deployed
+
+To switch to deployed infrastructure:
+```bash
+echo "VITE_API_GATEWAY_URL=$(cd infrastructure && terraform output -raw api_gateway_url)" > .env
+```
+
+To switch back to local:
+```bash
+echo "VITE_API_GATEWAY_URL=http://localhost:3000/local" > .env
+```
+
+**Note**: After changing `.env`, restart the dev server.
 
 ## Development
 

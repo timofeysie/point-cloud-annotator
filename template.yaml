@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Local development template for Point Cloud Annotator Lambda functions
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        TABLE_NAME: point-cloud-annotator-annotations
+
+Resources:
+  GetAnnotationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      CodeUri: lambda/get-annotations/
+      Events:
+        GetAnnotations:
+          Type: Api
+          Properties:
+            Path: /annotations
+            Method: get
+
+  CreateAnnotationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      CodeUri: lambda/create-annotation/
+      Events:
+        CreateAnnotation:
+          Type: Api
+          Properties:
+            Path: /annotations
+            Method: post
+
+  DeleteAnnotationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      CodeUri: lambda/delete-annotation/
+      Events:
+        DeleteAnnotation:
+          Type: Api
+          Properties:
+            Path: /annotations/{id}
+            Method: delete
+
+  AnnotationsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: local
+      Cors:
+        AllowMethods: "'GET,POST,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL for local development"
+    Value: !Sub "http://localhost:3000/local"
+
