@@ -38,6 +38,7 @@ considered bonus achievements.
 in an aws services.
 
 ■ Create a serverless backend using AWS Services using API Gateway to trigger a Lambda function that reads/writes from a NoSQL database like DynamoDB.
+
 Deployment:
 
 ○ provide clear instructions on how to run the project.

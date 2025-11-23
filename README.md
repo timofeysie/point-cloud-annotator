@@ -1,6 +1,6 @@
 # Potree Point Cloud Annotation Tool
 
-A web application for viewing and annotating LAZ point clouds using Three.js and Potree. Create, view, and manage 3D annotations on interactive point cloud data with persistent storage using AWS serverless architecture.
+This is a web application for viewing and annotating LAZ point clouds using Three.js and Potree. Create, view, and manage 3D annotations on interactive point cloud data with persistent storage using AWS serverless architecture.
 
 The application is deployed [here](http://point-cloud-annotator-232723.s3-website-us-east-1.amazonaws.com/).
 
@@ -35,6 +35,71 @@ npm run dev
 - **Infrastructure as Code**: Terraform for AWS resource management
 - **Build Tool**: Vite for fast development and optimized builds
 - **Icons**: Lucide React for UI icons
+
+## Architecture overview
+
+This application follows a serverless, cloud-native architecture with clear separation between frontend, backend, and infrastructure layers.
+
+### Frontend Layer
+
+- React: Single-page application built with React 18 and TypeScript
+- Potree: Uses the Potree library (loaded via script tags) to render 3D point clouds
+- Hosting: Deployed to S3 and served as a static website
+- API: `annotationService.ts` handles HTTP requests to the backend API
+
+### Backend Layer (Serverless)
+
+- API Gateway: REST API that receives HTTP requests from the frontend
+- Lambda Functions: Three serverless functions handle CRUD operations:
+  - `get-annotations`: Retrieves all annotations from DynamoDB
+  - `create-annotation`: Creates new annotations with 3D coordinates and text
+  - `delete-annotation`: Removes annotations by ID
+- DynamoDB: NoSQL database stores annotation data (id, coordinates, text, timestamps)
+
+### Infrastructure Layer
+
+- Terraform: Infrastructure as Code manages all AWS resources
+- IAM Roles: Provides Lambda functions with permissions to access DynamoDB
+- S3 Bucket: Hosts the frontend static files with website hosting enabled
+
+## Deployment details
+
+Terraform is an Infrastructure as Code tool that manages AWS infrastructure and provides configuration values used during deployment.  For this app, we have the following:
+
+- DynamoDB Table — Stores annotations
+- Lambda Functions (3):
+   - get-annotations — GET /annotations
+   - create-annotation — POST /annotations
+   - delete-annotation — DELETE /annotations/{id}
+- API Gateway — REST API that routes HTTP requests to Lambda functions
+- IAM Roles & Policies — Permissions for Lambda to access DynamoDB
+- S3 Bucket — Hosts the frontend static files
+- S3 Bucket Configuration — Website hosting, public access, versioning
+- CloudFront (optional) — CDN for the S3 bucket
+
+In the regular deployment workflow, Terraform is only used to get configuration values:
+
+Get the S3 bucket name (needed for deployment)terraform 
+```output -raw s3_bucket_name```
+
+Get the website URL (to visit
+``` 
+terraform output s3_website_endpoint
+```
+
+Terraform provides the bucket name and endpoint.
+As a one-time setup `terraform apply` creates all AWS resources
+
+For regular deployments `terraform output` is used.
+
+For infrastructure updates (Lambda code, API Gateway config) `terraform apply` needs to be run.
+
+Summary
+Terraform = 
+: Creates and manages AWS resources
+Deployment script = Code deployment: Uploads frontend files to the S3 bucket Terraform created
+Separation: Infrastructure (Terraform) vs. application code (deployment script)
+In regular deployments, Terraform is read-only—you're just reading the bucket name it created, not
 
 ## Prerequisites
 

@@ -1,18 +1,36 @@
 # Quick Deployment Steps
 
-## Prerequisites Check
+## Deployment Workflow
+
+Build the frontend and deploy to S3.
+
+```bash
+npm run build
+export S3_BUCKET_NAME=$(cd infrastructure && terraform output -raw s3_bucket_name)
+./scripts/deploy-s3.sh $S3_BUCKET_NAME
+cd infrastructure
+terraform output s3_website_endpoint
+```
+
+## Initial Setup (One-Time Only)
+
+These steps are only needed the first time you deploy, or if you're setting up a new environment.
+
+### Prerequisites Check
 
 Before deploying, ensure you have:
 
-   ```bash
+```bash
 brew install awscli
 aws configure
 brew install terraform
 ```
 
+**Note:** `aws configure` is only needed once per machine. After that, AWS CLI uses the stored credentials.
+
 The AWS Account should have the appropriate permissions (DynamoDB, Lambda, API Gateway, S3, IAM)
 
-### Deploy Infrastructure
+### Step 1: Deploy Infrastructure
 
 ```bash
 cd infrastructure
@@ -21,14 +39,16 @@ terraform plan
 terraform apply
 ```
 
-### Step 5: Get API Gateway URL
+**Note:** `terraform init` is only needed once per infrastructure directory. After that, you can skip directly to `terraform apply` for updates.
+
+### Step 2: Get API Gateway URL
 ```bash
 cd infrastructure
 terraform output api_gateway_url
 # Copy this URL - you'll need it for the next step
 ```
 
-### Step 6: Configure Frontend Environment
+### Step 3: Configure Frontend Environment
 ```bash
 cd ..  # Return to project root
 
@@ -36,29 +56,17 @@ cd ..  # Return to project root
 echo "VITE_API_GATEWAY_URL=$(cd infrastructure && terraform output -raw api_gateway_url)" > .env
 ```
 
-### Step 7: Build and Deploy Frontend
-```bash
-# Build the frontend
-npm run build
-
-# Deploy to S3
-export S3_BUCKET_NAME=$(cd infrastructure && terraform output -raw s3_bucket_name)
-aws s3 sync dist/ s3://$S3_BUCKET_NAME --delete
-```
-
-### Step 8: Get Application URL
-```bash
-cd infrastructure
-terraform output s3_website_endpoint
-# Visit this URL in your browser to test the application
-```
+**Note:** This only needs to be done once, or if the API Gateway URL changes (e.g., after `terraform destroy` and `terraform apply`).
 
 ## Testing the Point Cloud
 
 Once deployed, visit the S3 website endpoint and:
-1. Check if the point cloud loads (this will confirm if potree-loader works in production)
-2. Test annotation creation/editing/deletion
-3. Verify the API Gateway is working correctly
+1. Check if the point cloud loads (Potree library should load and display the point cloud)
+2. Verify Potree dependencies loaded (check browser console for "Potree 1.8.0" message)
+3. Test annotation creation/editing/deletion
+4. Verify the API Gateway is working correctly
+
+**Note:** The build process now automatically includes Potree library files from `public/potree/`. These are deployed along with the frontend build.
 
 ## Cleanup (When Done Testing)
 
