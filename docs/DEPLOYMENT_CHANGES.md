@@ -166,3 +166,4 @@ After deploying, verify:
    - Potree.js could be loaded from CDN (if available)
    - Consider code splitting if Potree becomes optional feature
 
+

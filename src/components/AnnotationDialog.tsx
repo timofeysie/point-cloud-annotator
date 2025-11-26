@@ -116,3 +116,4 @@ export function AnnotationDialog({ isOpen, onClose, onSave, x, y, z }: Annotatio
   );
 }
 
+

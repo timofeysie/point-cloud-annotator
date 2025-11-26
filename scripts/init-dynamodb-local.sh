@@ -30,3 +30,4 @@ echo ""
 echo "DynamoDB Local table '$TABLE_NAME' is ready!"
 echo "You can now start the SAM Local API with: ./scripts/start-local-api.sh"
 
+
