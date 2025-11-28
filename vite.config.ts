@@ -63,4 +63,8 @@ export default defineConfig({
       allow: ['..'],
     },
   },
+  // Serve potree build files and resources
+  publicDir: 'public',
+  // Configure static file serving for potree
+  assetsInclude: ['**/*.json', '**/*.bin', '**/*.hrc'],
 });

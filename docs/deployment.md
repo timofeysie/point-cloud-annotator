@@ -287,3 +287,106 @@ For low to moderate usage, expect costs under $10-20/month.
 - [API Gateway Documentation](https://docs.aws.amazon.com/apigateway/)
 - [DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
 
+## Local Development with SAM Local
+
+This application supports local development using AWS SAM Local, which allows you to run Lambda functions locally without deploying to AWS. This is particularly useful for testing annotation functionality during development.
+
+### SAM Local Setup
+
+**Prerequisites:**
+- AWS SAM CLI installed (`brew install aws-sam-cli` or see [AWS SAM CLI Installation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html))
+- Docker Desktop running (required for SAM Local)
+
+**Configuration Files:**
+- `template.yaml`: SAM template defining Lambda functions for local execution
+- `docker-compose.yml`: Runs DynamoDB Local on port 8000
+- `env.json`: Environment variables for Lambda functions (points to DynamoDB Local)
+- `scripts/start-local-api.sh`: Script to start SAM Local API
+- `scripts/init-dynamodb-local.sh`: Script to initialize DynamoDB Local table
+
+### Local Development Workflow
+
+1. **Start DynamoDB Local:**
+   ```bash
+   docker-compose up -d dynamodb-local
+   ```
+
+2. **Initialize DynamoDB Local Table:**
+   ```bash
+   ./scripts/init-dynamodb-local.sh
+   ```
+   This creates the `point-cloud-annotator-annotations` table in DynamoDB Local.
+
+3. **Start SAM Local API:**
+   ```bash
+   ./scripts/start-local-api.sh
+   ```
+   This starts the SAM Local API on `http://localhost:3000` with the following endpoints:
+   - `GET http://localhost:3000/local/annotations`
+   - `POST http://localhost:3000/local/annotations`
+   - `DELETE http://localhost:3000/local/annotations/{id}`
+
+4. **Configure Frontend for Local Development:**
+   Create or update `.env` file in the project root:
+   ```env
+   VITE_API_GATEWAY_URL=http://localhost:3000/local
+   ```
+
+5. **Run Frontend Development Server:**
+   ```bash
+   npm run dev
+   ```
+
+The frontend will now use the local SAM Local API instead of the deployed AWS API Gateway.
+
+### How It Works
+
+The `annotationService.ts` uses the `VITE_API_GATEWAY_URL` environment variable to determine which API to use:
+
+```typescript
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || '';
+```
+
+- **Local Development**: Set `VITE_API_GATEWAY_URL=http://localhost:3000/local` → Uses SAM Local
+- **Production**: Set `VITE_API_GATEWAY_URL=<terraform-output-api-gateway-url>` → Uses real AWS API Gateway
+
+The same Lambda function code in `lambda/` directories is used by both:
+- **SAM Local**: Executes functions locally via `template.yaml`
+- **Terraform**: Packages and deploys the same code to AWS Lambda
+
+### Switching Between Local and Production
+
+To switch between local and production environments, simply change the `VITE_API_GATEWAY_URL` in your `.env` file:
+
+**For Local Development:**
+```env
+VITE_API_GATEWAY_URL=http://localhost:3000/local
+```
+
+**For Production:**
+```env
+VITE_API_GATEWAY_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com/prod
+```
+
+**Important**: After changing `.env`, you need to restart the development server (`npm run dev`) for the changes to take effect, as Vite reads environment variables at startup.
+
+### Production Deployment Confirmation
+
+When deploying to production:
+
+1. **Infrastructure**: Terraform creates real AWS resources:
+   - Lambda functions in AWS (using the same code from `lambda/` directories)
+   - API Gateway REST API
+   - DynamoDB table in AWS
+   - IAM roles and policies
+
+2. **Frontend**: The built frontend (via `npm run build`) embeds the `VITE_API_GATEWAY_URL` at build time, so the production build will use the AWS API Gateway URL you specify in `.env` before building.
+
+3. **Same Codebase**: The application code works identically in both environments - only the API endpoint URL changes based on the environment variable.
+
+This architecture ensures that:
+- Local development uses SAM Local and DynamoDB Local (no AWS costs)
+- Production deployment uses real AWS services (Lambda, API Gateway, DynamoDB)
+- The same codebase works for both environments
+- Lambda function code is tested locally before deployment
+

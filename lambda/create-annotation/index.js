@@ -2,7 +2,18 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { randomUUID } from 'crypto';
 
-const dynamoClient = new DynamoDBClient({});
+// Support DynamoDB Local for local development
+const dynamoClientConfig = {};
+if (process.env.AWS_ENDPOINT_URL) {
+  dynamoClientConfig.endpoint = process.env.AWS_ENDPOINT_URL;
+  dynamoClientConfig.region = 'local';
+  dynamoClientConfig.credentials = {
+    accessKeyId: 'local',
+    secretAccessKey: 'local',
+  };
+}
+
+const dynamoClient = new DynamoDBClient(dynamoClientConfig);
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
 const TABLE_NAME = process.env.TABLE_NAME;
