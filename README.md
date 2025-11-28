@@ -158,9 +158,11 @@ The application will be available at `http://localhost:5173`.
    - Run dev server: `npm run dev`
 
 2. **Use deployed infrastructure**:
-   - Deploy the AWS infrastructure first and use the API Gateway URL
+- Deploy the AWS infrastructure first and use the API Gateway URL
    - Set `.env`: `VITE_API_GATEWAY_URL=<your-api-gateway-url>`
    - Run dev server: `npm run dev`
+
+I decided to use AWS Serverless Application Model (AWS SAM) for building serverless app.  THis requires the AWS SAM CLI to locally test, and deploy the serverless app.
 
 ### Building for Production
 

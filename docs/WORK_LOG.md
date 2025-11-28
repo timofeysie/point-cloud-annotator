@@ -1925,4 +1925,26 @@ PotreeViewer.tsx:362 [Click Handler] Click listener removed
 170
 ```
 
-The annotations are working now, but there are repeated sections of the point cloud after adding an annotation.  Also, there are large red circles in the background that do not appear to be associated with the annotated points.  I think we need to make sure the pint that is annotated has an appropriate style to show that it has an annotation.
+The annotations are working now, but there are repeated sections of the point cloud after adding an annotation.  Also, there are large red circles in the background that do not appear to be associated with the annotated points.  I think we need to make sure the pint that is annotated has an appropriate style to show that it has an annotation.  Also, the annotation modal should not show up when clicking on empty space.
+
+*The dependency on pointCloudRef.current won't work because refs don't trigger re-renders. Setting up the click handler when the point cloud loads.*
+
+- Added pointCloudReady state: Tracks when the point cloud is loaded and ready.
+- Trigger click handler setup: When the point cloud loads, set pointCloudReady to true after a short delay, which triggers the click handler useEffect.
+- Updated click handler dependency: The click handler useEffect now depends on pointCloudReady, so it sets up when the point cloud is ready.
+- Added logging: Console logs to trace click events and setup.
+
+Also updating the click handler to only open the modal when clicking an actual point in the cloud, not empty space. Improving point detection.
+
+Next prompt:
+
+After that change, the annotated points are squares, but they are rotated for some reason.  They are also not in their place where the points are.  Also, when the user clicks on blank space, the annotation modal appears.  It seems like the annotations are now in the fractured point cloud that we were previously seeing when the modal appeared.  What was the solution for that problem, and can we apply the same solution to the annotated point positions?
+
+*Fixing coordinate system issues and click detection. Potree's pick method returns coordinates in the point cloud's local space, and we should only use it (not bounding box intersection). Ensuring markers are added in the same coordinate space.*
+*Fixing coordinate system and click detection: using only Potree's pick method, adding markers as children of the point cloud, and correcting rotation:*
+
+Now we are back to no clicks triggering the annotation modal.
+
+*The click handler may not be attaching correctly. Adding a ref to track setup and ensuring it attaches properly.*
+
+After that, confirm Using AWS SAM Local for saving annotations when developing locally.
